@@ -12,6 +12,10 @@ import GradualBlur from '../GradualBlur';
 import { MaloxieButton, MaloxieIconButton } from '../ui/MaloxieButton';
 import { TactilePillButton } from '../ui/UiverseControls';
 import { useMaloxie } from '../../context/MaloxieContext';
+import {
+  generateCoachResponse,
+  generateTrainingProgram,
+} from '../../services/maloxieEngine';
 import type { AiProgramWeek, AiTrainingProgram } from '../../types/training';
 
 interface ChatMessage {
@@ -131,25 +135,39 @@ export const CrystalBallAiView: React.FC<CrystalBallAiViewProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch('/api/ai/coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let answer = '';
+      try {
+        const res = await fetch('/api/ai/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: trimmed,
+            history: nextHistory.slice(-6),
+            trainingContext,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          answer = typeof data.answer === 'string' ? data.answer : '';
+        }
+      } catch {
+        // Fallback to local engine if backend is unavailable
+      }
+
+      if (!answer) {
+        answer = generateCoachResponse({
           question: trimmed,
           history: nextHistory.slice(-6),
           trainingContext,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Maloxie AI could not respond.');
+        });
       }
+
       setMessages((prev) => [
         ...prev,
         {
           id: `a_${Date.now()}`,
           role: 'assistant',
-          content: data.answer,
+          content: answer,
         },
       ]);
     } catch (err) {
@@ -176,24 +194,39 @@ export const CrystalBallAiView: React.FC<CrystalBallAiViewProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch('/api/ai/program', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let generated: Omit<AiTrainingProgram, 'id' | 'userId' | 'createdAt'> | null = null;
+      try {
+        const res = await fetch('/api/ai/program', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            goalPrompt,
+            durationWeeks,
+            daysPerWeek,
+            includeDeload,
+            splitPreference,
+            trainingContext,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          generated = data.program as Omit<AiTrainingProgram, 'id' | 'userId' | 'createdAt'>;
+        }
+      } catch {
+        // Fallback to local engine if backend is unavailable
+      }
+
+      if (!generated) {
+        generated = generateTrainingProgram({
           goalPrompt,
           durationWeeks,
           daysPerWeek,
           includeDeload,
           splitPreference,
           trainingContext,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Program generation failed.');
+        });
       }
 
-      const generated = data.program as Omit<AiTrainingProgram, 'id' | 'userId' | 'createdAt'>;
       await saveAiProgram(generated);
       setProgramStatusMsg(`Saved "${generated.title}" to your training library.`);
     } catch (err) {

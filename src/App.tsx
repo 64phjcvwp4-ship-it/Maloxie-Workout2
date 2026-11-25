@@ -21,6 +21,8 @@ function MaloxieShell() {
     signInWithGoogle,
     signOut,
     exportTrainingJson,
+    cloudSyncStatus,
+    retryCloudSync,
     actionError,
     clearActionError,
   } = useMaloxie();
@@ -167,7 +169,13 @@ function MaloxieShell() {
           <div className="flex items-center gap-3">
             <span className="text-zinc-300 font-medium">
               {user
-                ? `${user.email} · Cloud Synced`
+                ? `${user.email} · ${
+                    cloudSyncStatus === 'syncing'
+                      ? 'Syncing to Cloud...'
+                      : cloudSyncStatus === 'error'
+                        ? 'Sync Paused'
+                        : 'Cloud Synced'
+                  }`
                 : authReady
                   ? 'Guest Workspace (Local Mode)'
                   : 'Initializing Workspace...'}
@@ -189,6 +197,15 @@ function MaloxieShell() {
             </div>
           </div>
           <div className="flex items-center gap-2.5">
+            {user && cloudSyncStatus === 'error' && (
+              <MaloxieButton
+                variant="secondary"
+                size="xs"
+                onClick={retryCloudSync}
+              >
+                Retry Cloud Sync
+              </MaloxieButton>
+            )}
             <MaloxieButton
               variant="subtle"
               size="xs"
@@ -221,9 +238,16 @@ function MaloxieShell() {
         <div className="relative z-10 max-w-7xl w-full mx-auto px-6 pt-4">
           <div className="rounded-2xl bg-red-500/10 backdrop-blur-xl border border-red-500/25 p-3.5 text-xs text-red-200 flex items-center justify-between gap-4">
             <span>{actionError}</span>
-            <button type="button" onClick={clearActionError} className="underline cursor-pointer">
-              Dismiss
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {user && cloudSyncStatus === 'error' && (
+                <button type="button" onClick={retryCloudSync} className="underline font-medium cursor-pointer">
+                  Retry Sync
+                </button>
+              )}
+              <button type="button" onClick={clearActionError} className="underline cursor-pointer">
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       )}

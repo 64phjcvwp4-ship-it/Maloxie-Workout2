@@ -64,6 +64,8 @@ interface MaloxieContextValue {
   measurements: BodyMeasurement[];
   goals: TrainingGoal[];
   programs: AiTrainingProgram[];
+  cloudSyncStatus: 'local' | 'syncing' | 'synced' | 'error';
+  retryCloudSync: () => Promise<void>;
   actionError: string | null;
   clearActionError: () => void;
   signInWithGoogle: () => Promise<void>;
@@ -112,6 +114,11 @@ const MaloxieContext = createContext<MaloxieContextValue | undefined>(undefined)
 
 function makeId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function sanitizeDocId(rawId: string | undefined, fallbackPrefix: string): string {
+  const cleaned = (rawId || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 128);
+  return cleaned.length > 0 ? cleaned : makeId(fallbackPrefix);
 }
 
 const GUEST_STORAGE_KEY = 'maloxie_guest_workspace_v1';
@@ -201,6 +208,8 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [goals, setGoals] = useState<TrainingGoal[]>([]);
   const [programs, setPrograms] = useState<AiTrainingProgram[]>([]);
+  const [profileReadyUid, setProfileReadyUid] = useState<string | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'local' | 'syncing' | 'synced' | 'error'>('local');
   const [actionError, setActionError] = useState<string | null>(null);
 
   const clearActionError = useCallback(() => setActionError(null), []);
@@ -217,8 +226,12 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
   );
 
   const bootstrapUserWorkspace = useCallback(async (firebaseUser: User) => {
-    const userPath = `users/${firebaseUser.uid}`;
-    const userRef = doc(db, 'users', firebaseUser.uid);
+    const uid = firebaseUser.uid;
+    const userPath = `users/${uid}`;
+    const userRef = doc(db, 'users', uid);
+    setCloudSyncStatus('syncing');
+
+    const guest = loadGuestWorkspace();
 
     try {
       const snap = await getDoc(userRef);
@@ -226,22 +239,22 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
         const displayName = (firebaseUser.displayName || 'Maloxie Athlete').slice(0, 120);
         const email = (firebaseUser.email || 'athlete@maloxie.app').slice(0, 200);
         await setDoc(userRef, {
-          uid: firebaseUser.uid,
+          uid,
           displayName,
           email,
-          preferredUnit: 'kg',
-          activeDeloadWeek: false,
-          deloadLabel: 'Standard Accumulation',
+          preferredUnit: guest.unit === 'lbs' ? 'lbs' : 'kg',
+          activeDeloadWeek: Boolean(guest.activeDeloadWeek),
+          deloadLabel: (guest.deloadLabel || 'Standard Accumulation').slice(0, 80),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
 
         // Seed pre-loaded exercise library and starter Push/Pull/Legs/Full Body templates
-        const batch = writeBatch(db);
+        const seedBatch = writeBatch(db);
         for (const ex of PRESET_EXERCISES) {
-          const exRef = doc(db, 'users', firebaseUser.uid, 'exercises', ex.id);
-          batch.set(exRef, {
-            userId: firebaseUser.uid,
+          const exRef = doc(db, 'users', uid, 'exercises', ex.id);
+          seedBatch.set(exRef, {
+            userId: uid,
             name: ex.name,
             muscleGroup: ex.muscleGroup,
             equipment: ex.equipment,
@@ -251,9 +264,9 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
           });
         }
         for (const tpl of PRESET_TEMPLATES) {
-          const tplRef = doc(db, 'users', firebaseUser.uid, 'templates', tpl.id);
-          batch.set(tplRef, {
-            userId: firebaseUser.uid,
+          const tplRef = doc(db, 'users', uid, 'templates', tpl.id);
+          seedBatch.set(tplRef, {
+            userId: uid,
             name: tpl.name,
             splitType: tpl.splitType,
             description: tpl.description,
@@ -263,24 +276,222 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
             updatedAt: serverTimestamp(),
           });
         }
-        await batch.commit();
+        await seedBatch.commit();
       }
+
+      // Migrate any local guest logs/metrics/goals/custom items seamlessly into the cloud account
+      const customExercises = guest.exercises.filter((e) => e.isCustom);
+      const customTemplates = guest.templates.filter((t) => t.source !== 'preset');
+      const hasGuestData =
+        guest.workouts.length > 0 ||
+        guest.prs.length > 0 ||
+        guest.measurements.length > 0 ||
+        guest.goals.length > 0 ||
+        guest.programs.length > 0 ||
+        customExercises.length > 0 ||
+        customTemplates.length > 0;
+
+      if (hasGuestData) {
+        const ops: Array<(b: ReturnType<typeof writeBatch>) => void> = [];
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        const todayFallback = new Date().toISOString().slice(0, 10);
+
+        for (const w of guest.workouts) {
+          const wid = sanitizeDocId(w.id, 'wk');
+          const safeDate = datePattern.test(w.date) ? w.date : todayFallback;
+          const docData: Record<string, unknown> = {
+            userId: uid,
+            date: safeDate,
+            title: (w.title || 'Strength Session').trim().slice(0, 120),
+            isDeload: Boolean(w.isDeload),
+            energyLevel: Math.min(10, Math.max(1, Math.round(w.energyLevel || 7))),
+            sleepHours: Math.min(24, Math.max(0, Number(w.sleepHours ?? 7.5))),
+            sleepQuality: Math.min(10, Math.max(1, Math.round(w.sleepQuality || 7))),
+            warmupItems: Array.isArray(w.warmupItems) ? w.warmupItems.slice(0, 20) : [],
+            exercises: Array.isArray(w.exercises) ? w.exercises.slice(0, 30) : [],
+            totalVolumeKg: Math.min(1000000, Math.max(0, Number(w.totalVolumeKg || 0))),
+            totalSets: Math.min(500, Math.max(0, Math.round(w.totalSets || 0))),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+          if (w.templateName && w.templateName.trim()) {
+            docData.templateName = w.templateName.trim().slice(0, 100);
+          }
+          if (w.injuryNotes && w.injuryNotes.trim()) {
+            docData.injuryNotes = w.injuryNotes.trim().slice(0, 600);
+          }
+          ops.push((b) => b.set(doc(db, 'users', uid, 'workouts', wid), docData));
+        }
+
+        for (const pr of guest.prs) {
+          const pid = sanitizeDocId(pr.id || slugifyExercise(pr.exerciseName), 'pr');
+          const safeDate = datePattern.test(pr.achievedAt) ? pr.achievedAt : todayFallback;
+          ops.push((b) =>
+            b.set(doc(db, 'users', uid, 'prs', pid), {
+              userId: uid,
+              exerciseName: (pr.exerciseName || 'Exercise').trim().slice(0, 100),
+              muscleGroup: pr.muscleGroup || 'Full Body',
+              bestWeightKg: Math.min(2000, Math.max(0, Number(pr.bestWeightKg || 0))),
+              bestWeightReps: Math.min(500, Math.max(1, Math.round(pr.bestWeightReps || 1))),
+              bestEstimated1RMKg: Math.min(3000, Math.max(0, Number(pr.bestEstimated1RMKg || 0))),
+              bestSetVolumeKg: Math.min(100000, Math.max(0, Number(pr.bestSetVolumeKg || 0))),
+              achievedAt: safeDate,
+              workoutId: sanitizeDocId(pr.workoutId, 'wk'),
+              updatedAt: serverTimestamp(),
+            })
+          );
+        }
+
+        for (const m of guest.measurements) {
+          if (!(m.bodyweightKg > 0 && m.bodyweightKg <= 500)) continue;
+          const mid = sanitizeDocId(m.id, 'meas');
+          const safeDate = datePattern.test(m.date) ? m.date : todayFallback;
+          const docData: Record<string, unknown> = {
+            userId: uid,
+            date: safeDate,
+            bodyweightKg: Number(m.bodyweightKg.toFixed(2)),
+            createdAt: serverTimestamp(),
+          };
+          if (m.bodyFatPct && m.bodyFatPct >= 2 && m.bodyFatPct <= 75) docData.bodyFatPct = Number(m.bodyFatPct.toFixed(1));
+          if (m.waistCm && m.waistCm > 0 && m.waistCm <= 300) docData.waistCm = Number(m.waistCm.toFixed(1));
+          if (m.chestCm && m.chestCm > 0 && m.chestCm <= 300) docData.chestCm = Number(m.chestCm.toFixed(1));
+          if (m.armsCm && m.armsCm > 0 && m.armsCm <= 150) docData.armsCm = Number(m.armsCm.toFixed(1));
+          if (m.thighsCm && m.thighsCm > 0 && m.thighsCm <= 200) docData.thighsCm = Number(m.thighsCm.toFixed(1));
+          if (m.notes && m.notes.trim()) docData.notes = m.notes.trim().slice(0, 400);
+          ops.push((b) => b.set(doc(db, 'users', uid, 'measurements', mid), docData));
+        }
+
+        for (const g of guest.goals) {
+          if (!(g.targetValue > 0 && g.targetValue <= 1000000)) continue;
+          const gid = sanitizeDocId(g.id, 'goal');
+          const safeDate = datePattern.test(g.targetDate) ? g.targetDate : todayFallback;
+          ops.push((b) =>
+            b.set(doc(db, 'users', uid, 'goals', gid), {
+              userId: uid,
+              title: (g.title || 'Training Goal').trim().slice(0, 120),
+              exerciseName: (g.exerciseName || 'Exercise').trim().slice(0, 100),
+              metricType: g.metricType,
+              targetValue: Number(g.targetValue.toFixed(2)),
+              startValue: Math.min(1000000, Math.max(0, Number((g.startValue ?? 0).toFixed(2)))),
+              targetDate: safeDate,
+              status: g.status === 'achieved' ? 'achieved' : 'active',
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            })
+          );
+        }
+
+        for (const ex of customExercises) {
+          const eid = sanitizeDocId(ex.id, 'ex');
+          const docData: Record<string, unknown> = {
+            userId: uid,
+            name: (ex.name || 'Custom Exercise').trim().slice(0, 100),
+            muscleGroup: ex.muscleGroup || 'Full Body',
+            equipment: (ex.equipment || 'Barbell').trim().slice(0, 60),
+            isCustom: true,
+            createdAt: serverTimestamp(),
+          };
+          if (ex.cues && ex.cues.trim()) docData.cues = ex.cues.trim().slice(0, 400);
+          ops.push((b) => b.set(doc(db, 'users', uid, 'exercises', eid), docData));
+        }
+
+        for (const tpl of customTemplates) {
+          const tid = sanitizeDocId(tpl.id, 'tpl');
+          const docData: Record<string, unknown> = {
+            userId: uid,
+            name: (tpl.name || 'Custom Split').trim().slice(0, 100),
+            splitType: tpl.splitType || 'Custom',
+            source: tpl.source === 'ai' ? 'ai' : 'custom',
+            exercises: Array.isArray(tpl.exercises) ? tpl.exercises.slice(0, 25) : [],
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+          if (tpl.description && tpl.description.trim()) {
+            docData.description = tpl.description.trim().slice(0, 300);
+          }
+          ops.push((b) => b.set(doc(db, 'users', uid, 'templates', tid), docData));
+        }
+
+        for (const prog of guest.programs) {
+          if (!Array.isArray(prog.weeks) || prog.weeks.length === 0) continue;
+          const pid = sanitizeDocId(prog.id, 'prog');
+          ops.push((b) =>
+            b.set(doc(db, 'users', uid, 'programs', pid), {
+              userId: uid,
+              title: (prog.title || 'Maloxie AI Program').trim().slice(0, 120),
+              focus: (prog.focus || 'Strength progression').trim().slice(0, 240),
+              durationWeeks: Math.min(12, Math.max(1, Math.round(prog.durationWeeks || prog.weeks.length))),
+              deloadWeekNumber: Math.min(12, Math.max(0, Math.round(prog.deloadWeekNumber || 0))),
+              weeks: prog.weeks.slice(0, 12),
+              createdAt: serverTimestamp(),
+            })
+          );
+        }
+
+        const CHUNK_SIZE = 350;
+        for (let i = 0; i < ops.length; i += CHUNK_SIZE) {
+          const chunkBatch = writeBatch(db);
+          for (const applyOp of ops.slice(i, i + CHUNK_SIZE)) {
+            applyOp(chunkBatch);
+          }
+          await chunkBatch.commit();
+        }
+
+        const clearedGuest = defaultGuestWorkspace();
+        persistGuestWorkspace(clearedGuest);
+        setGuestState(clearedGuest);
+      }
+
+      setProfileReadyUid(uid);
+      setCloudSyncStatus('synced');
     } catch (error) {
+      setCloudSyncStatus('error');
       handleFirestoreError(error, OperationType.WRITE, userPath);
     }
   }, []);
 
+  const retryCloudSync = useCallback(async () => {
+    if (!user) return;
+    setActionError(null);
+    try {
+      await bootstrapUserWorkspace(user);
+    } catch (err) {
+      let message = err instanceof Error ? err.message : 'Failed to initialize cloud sync.';
+      try {
+        const parsed = JSON.parse(message);
+        if (parsed && typeof parsed.error === 'string') {
+          message = `Cloud sync permission error (${parsed.operationType ?? 'write'} at ${parsed.path ?? 'profile'}): ${parsed.error}`;
+        }
+      } catch {
+        // keep original message
+      }
+      setActionError(message);
+    }
+  }, [bootstrapUserWorkspace, user]);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
+      setProfileReadyUid(null);
       if (nextUser) {
         setDataLoading(true);
         try {
           await bootstrapUserWorkspace(nextUser);
         } catch (err) {
-          setActionError(err instanceof Error ? err.message : 'Failed to initialize profile.');
+          let message = err instanceof Error ? err.message : 'Failed to initialize profile.';
+          try {
+            const parsed = JSON.parse(message);
+            if (parsed && typeof parsed.error === 'string') {
+              message = `Cloud sync permission error (${parsed.operationType ?? 'write'} at ${parsed.path ?? 'profile'}): ${parsed.error}`;
+            }
+          } catch {
+            // keep original message
+          }
+          setActionError(message);
+          setDataLoading(false);
         }
       } else {
+        setCloudSyncStatus('local');
         const guest = loadGuestWorkspace();
         setGuestState(guest);
         setProfile({
@@ -305,9 +516,9 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
     return () => unsub();
   }, [bootstrapUserWorkspace]);
 
-  // Keep reactive state synced to localStorage guest workspace when signed out
+  // Keep reactive state synced to localStorage guest workspace when signed out or before cloud bootstrap finishes
   useEffect(() => {
-    if (!authReady || user) return;
+    if (!authReady || (user && profileReadyUid === user.uid)) return;
     setProfile({
       uid: 'guest',
       displayName: 'Athlete',
@@ -323,10 +534,10 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
     setMeasurements(guestState.measurements);
     setGoals(guestState.goals);
     setPrograms(guestState.programs);
-  }, [authReady, guestState, user]);
+  }, [authReady, guestState, profileReadyUid, user]);
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !user || profileReadyUid !== user.uid) return;
 
     const uid = user.uid;
     setDataLoading(true);
@@ -427,6 +638,19 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
+      const code = typeof err === 'object' && err !== null && 'code' in err ? String((err as { code?: unknown }).code) : '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      if (code === 'auth/popup-blocked') {
+        setActionError('Google Sign-In popup was blocked by your browser. Allow popups for this site and try again.');
+        return;
+      }
+      if (code === 'auth/unauthorized-domain') {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+        setActionError(`Sign-in domain "${host}" is not authorized in Firebase Auth.`);
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Google Sign-In failed.';
       setActionError(message);
     }
@@ -1159,6 +1383,8 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
       measurements,
       goals,
       programs,
+      cloudSyncStatus,
+      retryCloudSync,
       actionError,
       clearActionError,
       signInWithGoogle,
@@ -1188,6 +1414,7 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
       applyProgramSessionsAsTemplates,
       authReady,
       clearActionError,
+      cloudSyncStatus,
       dataLoading,
       deleteExercise,
       deleteGoal,
@@ -1202,6 +1429,7 @@ export function MaloxieProvider({ children }: { children: ReactNode }) {
       profile,
       programs,
       prs,
+      retryCloudSync,
       saveAiProgram,
       saveGoal,
       saveTemplate,
