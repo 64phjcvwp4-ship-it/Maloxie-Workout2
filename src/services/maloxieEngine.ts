@@ -96,11 +96,130 @@ function formatVolUnit(kg: number, unit: WeightUnit): string {
 function roundToPlate(kg: number, unit: WeightUnit): number {
   if (unit === 'lbs') {
     const lbs = kg * KG_TO_LBS;
-    const roundedLbs = Math.max(5, Math.round(lbs / 5) * 5);
-    return roundedLbs;
+    return Math.max(5, Math.round(lbs / 5) * 5);
   }
   return Math.max(2.5, Math.round(kg / 2.5) * 2.5);
 }
+
+const LIFT_KNOWLEDGE: Array<{
+  keywords: string[];
+  name: string;
+  muscleGroup: MuscleGroup;
+  cues: string[];
+  repScheme: string;
+  swap: string;
+}> = [
+  {
+    keywords: ['bench', 'chest press'],
+    name: 'Barbell Bench Press',
+    muscleGroup: 'Chest',
+    cues: [
+      'Retract and depress shoulder blades into the bench before unracking.',
+      'Touch lower sternum with elbows tucked ~45 degrees, then drive feet into the floor as you press.',
+    ],
+    repScheme: '3–4 sets × 5–8 reps at RPE 7.5–8.5 (2.5–3 min rest)',
+    swap: 'Incline Dumbbell Press or Machine Chest Press if shoulders feel cranky',
+  },
+  {
+    keywords: ['incline'],
+    name: 'Incline Dumbbell Press',
+    muscleGroup: 'Chest',
+    cues: [
+      'Set bench to 25–30 degrees to bias upper pecs without overloading front delts.',
+      'Lower for a controlled 2-second eccentric to a deep stretch before driving up.',
+    ],
+    repScheme: '3–4 sets × 8–10 reps at RPE 8 (2 min rest)',
+    swap: 'Incline Smith Machine Press for maximum stability',
+  },
+  {
+    keywords: ['squat'],
+    name: 'Barbell Back Squat',
+    muscleGroup: 'Legs',
+    cues: [
+      'Take a 360-degree breath into your brace before unlocking hips and knees together.',
+      'Keep midfoot balance and drive knees out in line with your toes out of the hole.',
+    ],
+    repScheme: '3–4 sets × 4–6 reps (strength) or 6–8 reps (hypertrophy) at RPE 7.5–8.5',
+    swap: '45-Degree Leg Press or Hack Squat if lower back or knees are fatigued',
+  },
+  {
+    keywords: ['deadlift', 'rdl', 'romanian'],
+    name: 'Deadlift / Romanian Deadlift',
+    muscleGroup: 'Back',
+    cues: [
+      'Pull the slack out of the bar until your lats lock down before pushing the floor away.',
+      'Keep the bar glued to shins/thighs and hinge through the hips rather than rounding the lumbar.',
+    ],
+    repScheme: '3 sets × 3–5 reps (Conventional) or 6–10 reps (RDL) at RPE 7.5–8.5',
+    swap: 'Trap-Bar Deadlift or Seated Hamstring Curl + Back Extension for lower-back relief',
+  },
+  {
+    keywords: ['overhead', 'ohp', 'shoulder press', 'military'],
+    name: 'Standing Overhead Press',
+    muscleGroup: 'Shoulders',
+    cues: [
+      'Squeeze glutes and brace abs so your ribcage stays stacked over your pelvis.',
+      'Tuck chin slightly on initiation and push your head through once the bar clears your forehead.',
+    ],
+    repScheme: '3 sets × 5–8 reps at RPE 7.5–8.5 (2–2.5 min rest)',
+    swap: 'Seated Dumbbell Shoulder Press or Landmine Press for shoulder comfort',
+  },
+  {
+    keywords: ['pull-up', 'pullup', 'chin-up', 'chinup', 'lat pulldown', 'pulldown'],
+    name: 'Weighted Pull-Up / Lat Pulldown',
+    muscleGroup: 'Back',
+    cues: [
+      'Initiate every rep by depressing your shoulder blades down and driving elbows toward your hips.',
+      'Control all the way to a full dead-hang stretch at the top.',
+    ],
+    repScheme: '3–4 sets × 6–10 reps at RPE 8 (2 min rest)',
+    swap: 'Neutral-Grip Lat Pulldown for smooth progression',
+  },
+  {
+    keywords: ['row', 't-bar'],
+    name: 'Bent-Over / Chest-Supported Row',
+    muscleGroup: 'Back',
+    cues: [
+      'Keep torso angle steady without heaving upward; pull toward your lower ribs/navel.',
+      'Pause briefly at peak contraction and control the eccentric stretch.',
+    ],
+    repScheme: '3–4 sets × 8–12 reps at RPE 8 (90–120s rest)',
+    swap: 'Chest-Supported T-Bar Row to remove lower-back fatigue',
+  },
+  {
+    keywords: ['lateral raise', 'side delt'],
+    name: 'Dumbbell Lateral Raise',
+    muscleGroup: 'Shoulders',
+    cues: [
+      'Raise in the scapular plane (~30 degrees forward) leading with elbows rather than shrugging traps.',
+      'Stop around shoulder height and resist gravity for 2 seconds on the way down.',
+    ],
+    repScheme: '3–4 sets × 12–15 reps at RPE 8.5–9 (60–75s rest)',
+    swap: 'Cable Lateral Raise for constant tension at the bottom',
+  },
+  {
+    keywords: ['curl', 'bicep'],
+    name: 'EZ-Bar / Incline Dumbbell Curl',
+    muscleGroup: 'Arms',
+    cues: [
+      'Pin upper arms slightly forward or at your sides—avoid swinging hips to start the rep.',
+      'Lower all the way until elbows are straight for full long-head tension.',
+    ],
+    repScheme: '3 sets × 8–12 reps at RPE 8–9 (60–90s rest)',
+    swap: 'Preacher Curl or Cable Curl',
+  },
+  {
+    keywords: ['tricep', 'pushdown', 'skullcrusher', 'extension', 'dip'],
+    name: 'Tricep Pushdown / Overhead Extension',
+    muscleGroup: 'Arms',
+    cues: [
+      'Lock upper arms in place so only the elbow joint hinges.',
+      'Include at least one overhead movement to stretch the long head of the triceps.',
+    ],
+    repScheme: '3 sets × 10–15 reps at RPE 8–9 (60–90s rest)',
+    swap: 'Rope Pushdown or Cross-Body Cable Extension',
+  },
+];
 
 function analyzeContext(ctx: TrainingContextPayload) {
   const unit: WeightUnit = ctx.preferredUnit === 'lbs' ? 'lbs' : 'kg';
@@ -136,7 +255,10 @@ function analyzeContext(ctx: TrainingContextPayload) {
   };
 
   const injuryNotes: Array<{ date: string; note: string }> = [];
-  const exerciseHistory = new Map<string, Array<{ date: string; topWeightKg: number; topE1rm: number; volKg: number }>>();
+  const exerciseHistory = new Map<
+    string,
+    Array<{ date: string; topWeightKg: number; topE1rm: number; volKg: number; topReps: number }>
+  >();
 
   for (const w of workouts) {
     const d = new Date(`${w.date}T12:00:00`);
@@ -164,6 +286,7 @@ function analyzeContext(ctx: TrainingContextPayload) {
       }
 
       let topWeight = 0;
+      let topReps = 0;
       let topE1rm = 0;
       let exVol = 0;
       for (const s of ex.sets || []) {
@@ -173,7 +296,10 @@ function analyzeContext(ctx: TrainingContextPayload) {
         }
         const weight = Number(s.weightKg) || 0;
         const reps = Number(s.reps) || 0;
-        if (weight > topWeight) topWeight = weight;
+        if (weight > topWeight || (weight === topWeight && reps > topReps)) {
+          topWeight = weight;
+          topReps = reps;
+        }
         const e1rm = reps === 1 ? weight : weight * (1 + reps / 30);
         if (e1rm > topE1rm) topE1rm = e1rm;
         exVol += weight * reps;
@@ -182,7 +308,7 @@ function analyzeContext(ctx: TrainingContextPayload) {
       const key = ex.name.trim();
       if (key) {
         const list = exerciseHistory.get(key) || [];
-        list.push({ date: w.date, topWeightKg: topWeight, topE1rm, volKg: exVol });
+        list.push({ date: w.date, topWeightKg: topWeight, topE1rm, volKg: exVol, topReps });
         exerciseHistory.set(key, list);
       }
     }
@@ -233,6 +359,7 @@ function analyzeContext(ctx: TrainingContextPayload) {
     avgEnergy,
     muscleSets,
     injuryNotes,
+    exerciseHistory,
     progressingLifts,
     stalledLifts,
     highFatigue,
@@ -240,49 +367,228 @@ function analyzeContext(ctx: TrainingContextPayload) {
   };
 }
 
+function buildEffectiveQuery(
+  rawQuestion: string,
+  history?: Array<{ role?: string; content?: string }>
+): { q: string; raw: string; isFollowUp: boolean } {
+  const raw = rawQuestion.trim();
+  const q = raw.toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+  const isShortFollowUp =
+    words.length <= 5 &&
+    /^(why|how|what about|and |more|explain|example|elaborate|yes|yeah|ok|okay|sure|details|which)/.test(q);
+
+  if (isShortFollowUp && Array.isArray(history) && history.length > 0) {
+    const prevUserMsgs = history
+      .filter((m) => m.role === 'user' && m.content && m.content.trim().toLowerCase() !== q)
+      .slice(-2)
+      .map((m) => m.content!.trim());
+    if (prevUserMsgs.length > 0) {
+      return {
+        q: `${prevUserMsgs.join(' ')} ${q}`.toLowerCase(),
+        raw,
+        isFollowUp: true,
+      };
+    }
+  }
+
+  return { q, raw, isFollowUp: false };
+}
+
 export function generateCoachResponse(payload: CoachRequestPayload): string {
-  const q = (payload.question || '').trim().toLowerCase();
+  const { q, raw } = buildEffectiveQuery(payload.question || '', payload.history);
   const stats = analyzeContext(payload.trainingContext ?? {});
   const { unit } = stats;
+  const hasLogs = stats.workouts.length > 0;
+  const step = unit === 'lbs' ? '5 lbs' : '2.5 kg';
+  const microStep = unit === 'lbs' ? '2.5 lbs' : '1.25 kg';
 
-  if (stats.workouts.length === 0) {
-    const activeGoals = stats.goals.filter((g) => g.status === 'active');
-    const latestBw = stats.measurements[0]?.bodyweightKg;
-    const lines = [
-      'BASELINE ASSESSMENT',
-      'No workout sessions are logged yet, so here is how to establish clean progressive overload from Session 1:',
+  // 1. Greeting / Identity / Help
+  if (/^(hi|hello|hey|yo|sup|good morning|good evening)\b/.test(q) || /what can you do|how do you work|\bhelp\b/.test(q)) {
+    const summaryLine = hasLogs
+      ? `I am tracking ${stats.workouts.length} workout(s), ${stats.prs.length} Personal Record(s), and ${stats.goals.length} goal(s) in ${unit.toUpperCase()}.`
+      : `Your workspace is ready in ${unit.toUpperCase()} (${stats.goals.length} active goal(s), ${stats.measurements.length} body measurement(s)).`;
+    return [
+      'MALOXIE CRYSTAL BALL',
+      summaryLine,
       '',
-      `• Preferred Unit & Baseline: ${unit.toUpperCase()}${latestBw ? ` · Latest bodyweight ${formatWeightUnit(latestBw, unit)}` : ''}${activeGoals.length ? ` · ${activeGoals.length} active goal(s)` : ''}.`,
-      '• First-Week Target: Log 3–4 sessions hitting RPE 7–8 (leaving 2–3 reps in reserve) so Maloxie can calibrate your Epley 1RMs and weekly tonnage.',
-      '• Recovery Tracking: Fill in sleep hours, energy (1–10), and any joint/injury notes on each workout so deload triggers stay accurate.',
-    ];
-    if (activeGoals.length > 0) {
-      const g = activeGoals[0];
+      'Ask me anything specific, such as:',
+      '• Lift Coaching: "How do I increase my bench press?" or "Form cues for Romanian deadlift"',
+      '• Programming & Volume: "How many sets per week for hypertrophy?" or "Best 4-day Upper/Lower split"',
+      '• Recovery & Nutrition: "Should I deload right now?" or "How much protein should I eat daily?"',
+    ].join('\n');
+  }
+
+  // 2. Specific Exercise / Movement Match (checks logged exercises, PRs, and lift knowledge)
+  const loggedMatchName = Array.from(stats.exerciseHistory.keys()).find((name) =>
+    q.includes(name.toLowerCase())
+  );
+  const prMatch = stats.prs.find((p) => q.includes(p.exercise.toLowerCase()));
+  const knowledgeMatch = LIFT_KNOWLEDGE.find((k) => k.keywords.some((kw) => q.includes(kw)));
+
+  // Only route to Lift Breakdown if the user isn't asking purely about deload/nutrition/warmup
+  const isPureTopic =
+    /warm\s?up|mobility|protein|calorie|macro|diet|creatine|deload|sleep|rest\s*(time|period|between)/.test(q) &&
+    !knowledgeMatch &&
+    !loggedMatchName;
+
+  if ((loggedMatchName || prMatch || knowledgeMatch) && !isPureTopic) {
+    const liftTitle = loggedMatchName || prMatch?.exercise || knowledgeMatch!.name;
+    const lines: string[] = [`LIFT COACHING — ${liftTitle.toUpperCase()}`];
+
+    if (prMatch) {
+      const nextTargetKg = prMatch.bestWeightKg + (unit === 'lbs' ? 2.268 : 2.5);
       lines.push(
-        `• Active Goal Focus: "${g.title}" (${g.exerciseName} → ${
-          g.metricType === 'volume' ? formatVolUnit(g.targetValueKg, unit) : formatWeightUnit(g.targetValueKg, unit)
-        } by ${g.targetDate}). Start at ~70–75% of target load for crisp 6–8 rep sets.`
+        `• Recorded PR: ${formatWeightUnit(prMatch.bestWeightKg, unit)} × ${prMatch.reps} reps (est. 1RM ${formatWeightUnit(prMatch.estimated1RMKg, unit)}) on ${prMatch.date}.`
+      );
+      lines.push(
+        `• Next Working Target: Push toward ${formatWeightUnit(nextTargetKg, unit)} once you hit the top of your rep range cleanly at RPE <= 8.`
+      );
+    } else if (loggedMatchName) {
+      const entries = stats.exerciseHistory.get(loggedMatchName)!;
+      const latest = entries[entries.length - 1];
+      lines.push(
+        `• Latest Session: ${formatWeightUnit(latest.topWeightKg, unit)} × ${latest.topReps} reps (est. 1RM ${formatWeightUnit(latest.topE1rm, unit)}).`
+      );
+    } else {
+      lines.push(
+        `• No logged sets for ${liftTitle} yet — start conservatively at RPE 7–7.5 (2–3 reps in reserve) and add ${step} whenever all sets hit the target reps cleanly.`
+      );
+    }
+
+    if (knowledgeMatch) {
+      lines.push('');
+      lines.push('EXECUTION & PROGRESSION');
+      for (const cue of knowledgeMatch.cues) {
+        lines.push(`• Form Cue: ${cue}`);
+      }
+      lines.push(`• Target Structure: ${knowledgeMatch.repScheme}`);
+      lines.push(`• Joint-Friendly Alternative: ${knowledgeMatch.swap}`);
+    }
+
+    if (stats.injuryNotes.length > 0) {
+      lines.push('');
+      lines.push(`• Injury Watch: You recently logged "${stats.injuryNotes[0].note}" — keep eccentrics controlled and stop 2+ reps shy of failure if discomfort rises.`);
+    }
+
+    return lines.join('\n');
+  }
+
+  // 3. Nutrition, Protein, Calories, Bulk / Cut, Supplements
+  if (/protein|calorie|macro|diet|eat|food|nutrition|bulk|cut|fat|lean|creatine|supplement|bodyweight|weight loss|gain weight/.test(q)) {
+    const latestBwKg = stats.measurements[0]?.bodyweightKg;
+    const bwDisplay = latestBwKg ? formatWeightUnit(latestBwKg, unit) : null;
+    const lines = ['NUTRITION & BODY COMPOSITION'];
+
+    if (latestBwKg) {
+      const proteinLow = Math.round(latestBwKg * 1.6);
+      const proteinHigh = Math.round(latestBwKg * 2.2);
+      const maintEst = Math.round(latestBwKg * 32);
+      lines.push(`• Anchor Bodyweight: ${bwDisplay} (from your latest measurement).`);
+      lines.push(`• Daily Protein Target: ${proteinLow}–${proteinHigh} g/day (1.6–2.2 g/kg) split across 3–4 meals to maximize muscle protein synthesis.`);
+      if (/cut|fat|lean|loss/.test(q)) {
+        lines.push(`• Fat-Loss Deficit: Aim around ${maintEst - 400}–${maintEst - 300} kcal/day (~300–450 kcal deficit) to lose 0.4–0.7% bodyweight/week while retaining strength.`);
+      } else if (/bulk|gain|mass|grow/.test(q)) {
+        lines.push(`• Lean Surplus: Aim around ${maintEst + 250}–${maintEst + 350} kcal/day (+250–350 kcal above maintenance) for steady lean tissue gain without excess fat.`);
+      } else {
+        lines.push(`• Estimated Maintenance Range: ~${maintEst - 150}–${maintEst + 150} kcal/day depending on daily step count and training volume.`);
+      }
+    } else {
+      lines.push('• Log your current bodyweight in Progress → Body Metrics so Maloxie can calculate exact gram and calorie targets.');
+      lines.push('• Rule of Thumb: Target 1.6–2.2 g protein per kg of bodyweight (0.75–1.0 g/lb), keep a modest +/-300 kcal surplus or deficit, and stay consistent for 2+ weeks before adjusting.');
+    }
+
+    lines.push('');
+    lines.push('TRAINING & RECOVERY SYNERGY');
+    lines.push('• Pre-Session Fuel: 30–60 g carbs 60–90 min before lifting supports high-output sets and RPE stability.');
+    lines.push('• Creatine Monohydrate: 3–5 g daily (timing does not matter) reliably improves repeat-set work capacity.');
+    return lines.join('\n');
+  }
+
+  // 4. Warm-Up & Mobility
+  if (/warm\s?up|warmup|mobility|stretch|ramp|prepare|activation/.test(q)) {
+    const topPr = stats.prs[0];
+    const lines = [
+      'WARM-UP & RAMP PROTOCOL',
+      'Keep your warm-up crisp (8–12 minutes) so it primes the nervous system without draining working sets:',
+      '',
+      '• Step 1 — General Heat (3–5 min): Light incline walk, rower, or assault bike until lightly sweating.',
+      '• Step 2 — Dynamic Mobility (3 min): 1–2 quick sets of band pull-aparts, thoracic rotations, or 90/90 hip openers for the joints you are training today.',
+      '• Step 3 — Specific Ramp Sets (3–4 sets):',
+    ];
+    if (topPr) {
+      const w50 = roundToPlate(topPr.bestWeightKg * 0.5, unit);
+      const w75 = roundToPlate(topPr.bestWeightKg * 0.75, unit);
+      const w90 = roundToPlate(topPr.bestWeightKg * 0.9, unit);
+      lines.push(
+        `  For example, based on your ${topPr.exercise} (${formatWeightUnit(topPr.bestWeightKg, unit)}): ${w50} ${unit} × 8 → ${w75} ${unit} × 4 → ${w90} ${unit} × 1–2 (rest 90s, then start working sets).`
+      );
+    } else {
+      lines.push('  Empty bar × 10 → 50% working weight × 6 → 75% × 3 → 90% × 1–2 (never fatigue yourself on warm-up sets).');
+    }
+    return lines.join('\n');
+  }
+
+  // 5. Rest Times, Tempo, Reps, Sets, Hypertrophy vs Strength
+  if (/rest\s*(time|period|between|long)|how long.*rest|tempo|eccentric|rpe|rir|rep range|how many (rep|set)|hypertrophy|strength vs/.test(q)) {
+    const lines = ['PROGRAMMING PARAMETERS — SETS, REPS & REST'];
+    if (/rest/.test(q)) {
+      lines.push('• Primary Compounds (Squat, Bench, Deadlift, OHP): Rest 2.5–4 minutes between sets so ATP and central drive recover.');
+      lines.push('• Secondary Compounds & Rows: Rest 90–120 seconds.');
+      lines.push('• Isolations (Laterals, Curls, Pushdowns, Calves): Rest 60–75 seconds.');
+    }
+    if (/rpe|rir|failure|heavy|intensity/.test(q)) {
+      lines.push(
+        `• Optimal Effort Zone: Keep most compound sets at RPE 7.5–8.5 (1.5–2.5 reps in reserve).${
+          hasLogs && stats.avgRpe ? ` Your recent 14d average is RPE ${stats.avgRpe}/10.` : ''
+        }`
+      );
+      lines.push('• Isolation Work: Safely push final sets to RPE 9–10 with minimal systemic fatigue.');
+    }
+    if (/rep|set|hypertrophy|strength|tempo|eccentric/.test(q) || lines.length === 1) {
+      lines.push('• Strength Emphasis: 3–5 sets × 3–6 reps at ~80–88% 1RM (RPE 7.5–8.5).');
+      lines.push('• Hypertrophy Emphasis: 10–18 hard sets per muscle group per week across 6–15 reps with a controlled 2-second eccentric.');
+      lines.push('• Double Progression Rule: Pick a rep range (e.g., 8–10). Once every set reaches 10 clean reps at RPE <= 8.5, add ' + step + ' next session.');
+    }
+    if (hasLogs) {
+      lines.push('');
+      lines.push(
+        `• Your Current Set Snapshot (${stats.workouts.length} logged session(s)): Chest ${stats.muscleSets.Chest} · Back ${stats.muscleSets.Back} · Legs ${stats.muscleSets.Legs} · Shoulders ${stats.muscleSets.Shoulders} · Arms ${stats.muscleSets.Arms}.`
       );
     }
     return lines.join('\n');
   }
 
-  const isDeloadQuery = /deload|fatigue|tired|sleep|recover|sore|pain|injur|burn|overtrain/.test(q);
-  const isSplitQuery = /split|volume|imbalance|weak|muscle|chest|back|leg|shoulder|arm|core|ratio/.test(q);
-  const isGoalQuery = /goal|target|fast|program|block|plan|milestone|bodyweight|cut|bulk/.test(q);
-  const isOverloadQuery = /overload|progress|stall|plateau|pr|1rm|bench|squat|deadlift|press|lift|strength|weight/.test(q);
+  // 6. Injury / Pain / Joint Safety
+  if (/pain|injur|hurt|ache|sore|tendon|impingement|knee|shoulder|lower back|elbow|wrist|hip/.test(q)) {
+    const lines = ['JOINT SAFETY & LOAD MANAGEMENT'];
+    if (stats.injuryNotes.length > 0) {
+      lines.push('• Logged Notes from Your Sessions:');
+      for (const note of stats.injuryNotes.slice(0, 3)) {
+        lines.push(`  - ${note.date}: "${note.note}"`);
+      }
+    }
+    lines.push('• Immediate Triage: Drop load by 15–25% on movements that trigger sharp pain (>3/10), slow down the eccentric to 3 seconds, and avoid bouncing out of the bottom.');
+    if (/shoulder/.test(q)) {
+      lines.push('• Shoulder Swaps: Replace flat barbell bench / dips temporarily with neutral-grip dumbbell press, floor press, or cable flyes.');
+    } else if (/knee/.test(q)) {
+      lines.push('• Knee Swaps: Shift from deep high-bar squats to controlled leg press, box squats, or hip-dominant RDLs/hamstring curls.');
+    } else if (/back/.test(q)) {
+      lines.push('• Lower-Back Swaps: Swap barbell rows and heavy conventional pulls for chest-supported rows, belt squats, or leg curls.');
+    } else {
+      lines.push('• If discomfort persists beyond 1–2 weeks or worsens under light warm-up sets, consult a qualified sports physio before loading heavy.');
+    }
+    return lines.join('\n');
+  }
 
-  const sections: string[] = [];
-
-  if (isDeloadQuery) {
-    sections.push('READINESS & DELOAD VERDICT');
+  // 7. Deload / Fatigue / Recovery / Sleep
+  if (/deload|fatigue|tired|sleep|recover|burn|overtrain|rest day/.test(q)) {
+    const lines = ['READINESS & DELOAD VERDICT'];
     if (stats.activeDeloadWeek) {
-      sections.push(
-        `• Protocol Status: Deload Week is already active. Keep working sets ~40% lower and cap intensity around RPE 6.0–6.5.`
-      );
-    } else if (stats.highFatigue) {
-      sections.push(
-        `• Recommendation: Schedule a 5–7 day Deload Week now. Your recent logs show fatigue markers (` +
+      lines.push('• Deload Protocol is Active: Keep working sets ~40% lower and cap intensity at RPE 6.0–6.5.');
+    } else if (hasLogs && stats.highFatigue) {
+      lines.push(
+        `• Recommendation: Schedule a 5–7 day Deload Week now. Fatigue markers detected (` +
           [
             stats.avgRpe >= 8.5 ? `avg RPE ${stats.avgRpe}/10` : '',
             stats.avgSleepHours < 6.5 ? `avg sleep ${stats.avgSleepHours}h` : '',
@@ -293,70 +599,59 @@ export function generateCoachResponse(payload: CoachRequestPayload): string {
             .join(', ') +
           ').'
       );
-    } else {
-      sections.push(
-        `• Recommendation: No immediate deload required. Recovery metrics look solid (avg RPE ${stats.avgRpe || '—'}/10, sleep ${stats.avgSleepHours}h, energy ${stats.avgEnergy}/10). Continue accumulating for 1–2 more weeks before a planned deload.`
+    } else if (hasLogs) {
+      lines.push(
+        `• Recommendation: Recovery looks steady (avg RPE ${stats.avgRpe || '—'}/10, sleep ${stats.avgSleepHours}h, energy ${stats.avgEnergy}/10). Keep training normally and plan a deload every 4–6 weeks.`
       );
+    } else {
+      lines.push('• Deload Timing Guide: Run 3–5 progressive accumulation weeks (RPE 7.5 → 8.5), then take 1 deload week cutting working sets by ~40% at RPE 6.0–6.5.');
     }
 
-    if (stats.injuryNotes.length > 0) {
-      sections.push('');
-      sections.push('LOGGED PAIN / INJURY NOTES');
-      for (const item of stats.injuryNotes.slice(0, 3)) {
-        sections.push(`• ${item.date}: "${item.note}" — reduce axial/end-range loading on affected joints and use controlled 3s eccentrics at RPE 6–7.`);
-      }
-    }
-
-    sections.push('');
-    sections.push('NEXT SESSION ADJUSTMENTS');
-    sections.push(
-      `• Set Volume: ${stats.highFatigue ? 'Drop working sets by ~40% (e.g., 4 sets → 2–3 sets)' : 'Maintain current working sets'} and keep at least 2–3 reps in reserve.`
-    );
-    sections.push(`• Weekly Tonnage: Current 7d volume is ${formatVolUnit(stats.weekVol, unit)} across ${stats.weekCount} session(s).`);
-    return sections.join('\n');
+    lines.push('');
+    lines.push('RECOVERY LEVERS');
+    lines.push('• Sleep Target: 7.5–9 hours/night — dropping below 6.5 hours increases perceived RPE and slows strength recovery.');
+    lines.push('• Toggle Deload Mode anytime in Library & Goals or generate a block with Final Week Deload enabled.');
+    return lines.join('\n');
   }
 
-  if (isSplitQuery) {
+  // 8. Split / Volume / Muscle Imbalances / Frequency
+  if (/split|volume|imbalance|weak|muscle|chest|back|leg|shoulder|arm|core|ratio|days a week|frequency|ppl|upper|full body/.test(q)) {
     const pushSets = stats.muscleSets.Chest + stats.muscleSets.Shoulders;
     const pullSets = stats.muscleSets.Back;
     const legSets = stats.muscleSets.Legs;
     const armCoreSets = stats.muscleSets.Arms + stats.muscleSets.Core;
 
-    sections.push('MUSCLE GROUP VOLUME & SPLIT AUDIT');
-    sections.push(
-      `• Recent Set Distribution (${stats.workouts.length} sessions): Chest ${stats.muscleSets.Chest} · Back ${stats.muscleSets.Back} · Legs ${stats.muscleSets.Legs} · Shoulders ${stats.muscleSets.Shoulders} · Arms ${stats.muscleSets.Arms} · Core ${stats.muscleSets.Core}`
-    );
-
-    const imbalances: string[] = [];
-    if (pushSets > pullSets * 1.35 && pullSets > 0) {
-      imbalances.push(`Pulling volume (${pullSets} sets) trails pressing volume (${pushSets} sets) — add 3–4 weekly sets of chest-supported rows or face pulls.`);
-    } else if (pullSets === 0 && pushSets > 0) {
-      imbalances.push('No Back sets recorded in recent sessions — add vertical & horizontal pulling to protect shoulder balance.');
-    }
-    if (legSets < Math.max(4, Math.round((pushSets + pullSets) * 0.3))) {
-      imbalances.push(`Lower-body volume (${legSets} sets) is lagging upper-body work — add squats, RDLs, or split squats.`);
-    }
-    if (stats.muscleSets.Core < 3) {
-      imbalances.push('Direct Core work is minimal — add 2–3 sets of hanging leg raises or cable crunches twice weekly.');
-    }
-
-    sections.push('');
-    sections.push('WEAK-LINK PRIORITIES');
-    if (imbalances.length > 0) {
-      for (const imp of imbalances) sections.push(`• ${imp}`);
-    } else {
-      sections.push(
-        `• Balanced Push/Pull/Legs ratio (${pushSets} push / ${pullSets} pull / ${legSets} legs / ${armCoreSets} arms+core). Keep progressive overload steady on primary compounds.`
+    const lines = ['SPLIT & MUSCLE VOLUME ANALYSIS'];
+    if (hasLogs) {
+      lines.push(
+        `• Logged Set Distribution (${stats.workouts.length} session(s)): Chest ${stats.muscleSets.Chest} · Back ${stats.muscleSets.Back} · Legs ${stats.muscleSets.Legs} · Shoulders ${stats.muscleSets.Shoulders} · Arms ${stats.muscleSets.Arms} · Core ${stats.muscleSets.Core}`
       );
+      if (pushSets > pullSets * 1.35 && pullSets > 0) {
+        lines.push(`• Imbalance Flag: Pulling (${pullSets} sets) trails pushing (${pushSets} sets) — add 3–4 weekly sets of rows or face pulls.`);
+      } else if (pullSets === 0 && pushSets > 0) {
+        lines.push('• Imbalance Flag: No Back sets logged recently — add pull-ups/pulldowns and rows to balance shoulder health.');
+      }
+      if (legSets < Math.max(4, Math.round((pushSets + pullSets) * 0.3))) {
+        lines.push(`• Lower-Body Focus: Leg sets (${legSets}) trail upper-body sets — schedule squats, RDLs, or split squats twice weekly.`);
+      }
+      if (pushSets + pullSets + legSets + armCoreSets > 0 && legSets >= 4 && pullSets >= pushSets * 0.7) {
+        lines.push('• Balance Verdict: Your Push/Pull/Legs distribution is well proportioned.');
+      }
+    } else {
+      lines.push('• Best Split by Training Frequency:');
+      lines.push('  - 3 Days/Week: Full Body (squat, hinge, push, pull every session).');
+      lines.push('  - 4 Days/Week: Upper / Lower (hits every muscle twice weekly with generous recovery).');
+      lines.push('  - 5–6 Days/Week: Push / Pull / Legs (high-volume specialization).');
     }
-    return sections.join('\n');
+    return lines.join('\n');
   }
 
-  if (isGoalQuery) {
+  // 9. Goals & Target Timelines
+  if (/goal|target|fast|achieve|milestone|how long|deadline/.test(q)) {
     const activeGoals = stats.goals.filter((g) => g.status === 'active');
-    sections.push('GOAL ACCELERATION ROADMAP');
+    const lines = ['GOAL ACCELERATION ROADMAP'];
     if (activeGoals.length === 0) {
-      sections.push('• No active goals found yet. Create a strength or bodyweight target in Library & Goals so Maloxie can map weekly load steps.');
+      lines.push('• You do not have an active goal set yet. Add a target weight, e1RM, or bodyweight milestone in the Library tab so Maloxie can track your exact remaining gap.');
     } else {
       for (const g of activeGoals.slice(0, 4)) {
         const matchingPr = stats.prs.find(
@@ -371,77 +666,74 @@ export function generateCoachResponse(payload: CoachRequestPayload): string {
                 : matchingPr.bestWeightKg
               : 0;
         const gapKg = g.targetValueKg - currentKg;
-        const stepLabel = unit === 'lbs' ? '2.5–5 lbs' : '1.25–2.5 kg';
-        sections.push(
+        lines.push(
           `• ${g.title} (${g.exerciseName} by ${g.targetDate}): Target ${
             g.metricType === 'volume' ? formatVolUnit(g.targetValueKg, unit) : formatWeightUnit(g.targetValueKg, unit)
-          }${currentKg > 0 ? ` · Current ${formatWeightUnit(currentKg, unit)} (${gapKg > 0 ? `${formatWeightUnit(gapKg, unit)} to go` : 'target reached!'})` : ''}. Add ${stepLabel} or +1 rep on top sets when RPE drops below 8.5.`
+          }${
+            currentKg > 0
+              ? ` · Current ${formatWeightUnit(currentKg, unit)} (${
+                  gapKg > 0 ? `${formatWeightUnit(gapKg, unit)} remaining` : 'target achieved!'
+                })`
+              : ''
+          }.`
         );
       }
     }
+    lines.push('');
+    lines.push(`• Pacing Strategy: Add ${microStep}–${step} or +1 rep on primary working sets whenever RPE stays <= 8, and keep protein and sleep steady.`);
+    return lines.join('\n');
+  }
 
-    sections.push('');
-    sections.push('RECOVERY GUARDRAILS');
-    sections.push(
-      `• Current 7d Volume: ${formatVolUnit(stats.weekVol, unit)} (${stats.weekCount} sessions) · Avg RPE ${stats.avgRpe || '—'}/10 · Sleep ${stats.avgSleepHours}h.`
+  // 10. Progressive Overload / Plateaus / General Questions
+  const isOverload = /overload|progress|stall|plateau|stuck|stronger|pr|1rm|increase/.test(q);
+  const lines: string[] = [
+    isOverload ? 'PROGRESSIVE OVERLOAD AUDIT' : `COACHING BRIEF — "${raw.slice(0, 72)}"`,
+  ];
+
+  if (hasLogs) {
+    const volDeltaLabel =
+      stats.volumeDeltaPct !== null
+        ? ` (${stats.volumeDeltaPct >= 0 ? '+' : ''}${stats.volumeDeltaPct}% vs prior 7d)`
+        : '';
+    lines.push(
+      `• 7-Day Tonnage: ${formatVolUnit(stats.weekVol, unit)} across ${stats.weekCount} session(s)${volDeltaLabel}.`
     );
-    if (stats.highFatigue) {
-      sections.push('• Caution: Fatigue signals detected — take a 1-week deload before peaking toward heavy PR attempts.');
-    } else {
-      sections.push('• Use the Multi-Week & Deload Builder tab to lock in a structured 4-week accumulation + deload block.');
+    lines.push(
+      `• Readiness & Effort: Avg RPE ${stats.avgRpe || '—'}/10 · Sleep ${stats.avgSleepHours}h (quality ${stats.avgSleepQuality}/10) · Energy ${stats.avgEnergy}/10.`
+    );
+    if (stats.prs.length > 0) {
+      const topPrs = stats.prs
+        .slice(0, 3)
+        .map(
+          (p) =>
+            `${p.exercise}: ${formatWeightUnit(p.bestWeightKg, unit)} × ${p.reps} (e1RM ${formatWeightUnit(p.estimated1RMKg, unit)})`
+        )
+        .join(' · ');
+      lines.push(`• Top PRs: ${topPrs}`);
     }
-    return sections.join('\n');
-  }
-
-  // Default & Overload / General Studio Coaching Audit
-  sections.push(isOverloadQuery ? 'PROGRESSIVE OVERLOAD AUDIT' : 'MALOXIE TRAINING ANALYSIS');
-  const volDeltaLabel =
-    stats.volumeDeltaPct !== null
-      ? ` (${stats.volumeDeltaPct >= 0 ? '+' : ''}${stats.volumeDeltaPct}% vs prior 7d)`
-      : '';
-  sections.push(
-    `• 7-Day Tonnage: ${formatVolUnit(stats.weekVol, unit)} across ${stats.weekCount} session(s)${volDeltaLabel}.`
-  );
-  sections.push(
-    `• Effort & Readiness: Avg RPE ${stats.avgRpe || '—'}/10 · Sleep ${stats.avgSleepHours}h (quality ${stats.avgSleepQuality}/10) · Energy ${stats.avgEnergy}/10.`
-  );
-
-  if (stats.prs.length > 0) {
-    const topPrs = stats.prs
-      .slice(0, 3)
-      .map((p) => `${p.exercise}: ${formatWeightUnit(p.bestWeightKg, unit)} × ${p.reps} (e1RM ${formatWeightUnit(p.estimated1RMKg, unit)})`)
-      .join(' · ');
-    sections.push(`• Top Personal Records: ${topPrs}`);
-  }
-
-  sections.push('');
-  sections.push('PROGRESSION & NEXT STEPS');
-  if (stats.progressingLifts.length > 0) {
-    sections.push(`• Trending Up: ${stats.progressingLifts.slice(0, 3).join(', ')}.`);
-  }
-  if (stats.stalledLifts.length > 0) {
-    const step = unit === 'lbs' ? '+5 lbs' : '+2.5 kg';
-    sections.push(
-      `• Plateau Watch: ${stats.stalledLifts.slice(0, 3).join(', ')} held flat across recent sessions. Switch to double progression (add +1 rep per set before adding ${step}) or drop 10% load for a fresh 4-week wave.`
-    );
+    lines.push('');
+    lines.push('ACTIONABLE RECOMMENDATIONS');
+    if (stats.progressingLifts.length > 0) {
+      lines.push(`• Trending Up: ${stats.progressingLifts.slice(0, 3).join(', ')}.`);
+    }
+    if (stats.stalledLifts.length > 0) {
+      lines.push(
+        `• Plateau Watch: ${stats.stalledLifts.slice(0, 3).join(', ')} held flat recently — use double progression (+1 rep/set before adding ${step}) or reset 10% lighter for a fresh 4-week climb.`
+      );
+    } else {
+      lines.push(
+        `• Overload Rule: Once all working sets reach the top of your target rep range at RPE <= 8, increase load by ${step} next session.`
+      );
+    }
   } else {
-    const step = unit === 'lbs' ? '5 lbs' : '2.5 kg';
-    sections.push(
-      `• Next Session Rule: Whenever all working sets hit the top of your rep range at RPE <= 8, increase load by ${step} on your next session.`
+    lines.push(
+      `• Context Note: You haven't logged workouts yet, so I cannot read past sets for "${raw.slice(0, 60)}" — here is the evidence-based approach in ${unit.toUpperCase()}:`
     );
+    lines.push(`• Core Progression: Pick 4–6 compound & isolation lifts per session, hit RPE 7.5–8.5, and add ${microStep}–${step} or +1 rep each week.`);
+    lines.push('• Tip: Ask me about a specific lift (e.g. "bench press cues"), nutrition ("how much protein?"), split design, rest periods, or switch to Multi-Week & Deload Builder to create a full plan.');
   }
 
-  if (stats.highFatigue) {
-    sections.push(
-      `• Fatigue Alert: ${
-        stats.injuryNotes.length
-          ? `Noted "${stats.injuryNotes[0].note}" — `
-          : ''
-      }avg RPE/sleep signals suggest scheduling a deload week soon to lock in adaptations.`
-    );
-  }
-
-  return sections.join('\n');
+  return lines.join('\n');
 }
 
 interface ExerciseTemplateSpec {
@@ -486,7 +778,9 @@ function resolveLoadGuidance(
     : `Add ${unit === 'lbs' ? '+5 lbs' : '+2.5 kg'} or +1 rep vs Week ${weekNum - 1} (target RPE ${rpe})`;
 }
 
-export function generateTrainingProgram(payload: ProgramRequestPayload): Omit<AiTrainingProgram, 'id' | 'userId' | 'createdAt'> {
+export function generateTrainingProgram(
+  payload: ProgramRequestPayload
+): Omit<AiTrainingProgram, 'id' | 'userId' | 'createdAt'> {
   const weeksCount = Math.min(Math.max(Math.round(Number(payload.durationWeeks) || 4), 2), 8);
   const daysCount = Math.min(Math.max(Math.round(Number(payload.daysPerWeek) || 4), 2), 6);
   const includeDeload = payload.includeDeload !== false;
@@ -730,16 +1024,46 @@ export function generateTrainingProgram(payload: ProgramRequestPayload): Omit<Ai
   let dayBlueprints: SessionTemplateBlueprint[] = [];
   if (splitPref === 'Full Body' || daysCount <= 3) {
     const cycle: SessionTemplateBlueprint[] = [
-      { name: 'Full Body A — Squat & Press Focus', splitType: 'Full Body', description: 'Primary squat and horizontal push paired with rowing and core.', specs: fullBodyA },
-      { name: 'Full Body B — Hinge & Pull Focus', splitType: 'Full Body', description: 'Posterior-chain hinge, incline press, and vertical pulling.', specs: fullBodyB },
-      { name: 'Full Body C — Hypertrophy & Accessories', splitType: 'Full Body', description: 'Unilateral lower work, lateral delts, and arm/core balance.', specs: [legsSession[2], pushSession[2], pullSession[2], pushSession[4], pullSession[4]] },
+      {
+        name: 'Full Body A — Squat & Press Focus',
+        splitType: 'Full Body',
+        description: 'Primary squat and horizontal push paired with rowing and core.',
+        specs: fullBodyA,
+      },
+      {
+        name: 'Full Body B — Hinge & Pull Focus',
+        splitType: 'Full Body',
+        description: 'Posterior-chain hinge, incline press, and vertical pulling.',
+        specs: fullBodyB,
+      },
+      {
+        name: 'Full Body C — Hypertrophy & Accessories',
+        splitType: 'Full Body',
+        description: 'Unilateral lower work, lateral delts, and arm/core balance.',
+        specs: [legsSession[2], pushSession[2], pullSession[2], pushSession[4], pullSession[4]],
+      },
     ];
     dayBlueprints = Array.from({ length: daysCount }, (_, i) => cycle[i % cycle.length]);
   } else if (splitPref === 'Push / Pull / Legs') {
     const ppl: SessionTemplateBlueprint[] = [
-      { name: 'Push — Chest, Shoulders & Triceps', splitType: 'Push', description: 'Compound pressing strength paired with medial delt and tricep volume.', specs: pushSession },
-      { name: 'Pull — Lats, Upper Back & Biceps', splitType: 'Pull', description: 'Vertical and horizontal pulling with rear-delt balance.', specs: pullSession },
-      { name: 'Legs — Squat, Hinge & Core', splitType: 'Legs', description: 'Balanced quad/hamstring progression with calves and trunk stability.', specs: legsSession },
+      {
+        name: 'Push — Chest, Shoulders & Triceps',
+        splitType: 'Push',
+        description: 'Compound pressing strength paired with medial delt and tricep volume.',
+        specs: pushSession,
+      },
+      {
+        name: 'Pull — Lats, Upper Back & Biceps',
+        splitType: 'Pull',
+        description: 'Vertical and horizontal pulling with rear-delt balance.',
+        specs: pullSession,
+      },
+      {
+        name: 'Legs — Squat, Hinge & Core',
+        splitType: 'Legs',
+        description: 'Balanced quad/hamstring progression with calves and trunk stability.',
+        specs: legsSession,
+      },
     ];
     dayBlueprints = Array.from({ length: daysCount }, (_, i) => ({
       ...ppl[i % 3],
@@ -747,10 +1071,30 @@ export function generateTrainingProgram(payload: ProgramRequestPayload): Omit<Ai
     }));
   } else {
     const ul: SessionTemplateBlueprint[] = [
-      { name: 'Upper A — Strength & Horizontal Focus', splitType: 'Upper', description: 'Primary bench and heavy row progression with shoulder/arm work.', specs: upperSession },
-      { name: 'Lower A — Squat & Posterior Chain', splitType: 'Lower', description: 'Primary squat pattern, RDL hinge, and core stability.', specs: lowerSession },
-      { name: 'Upper B — Vertical & Hypertrophy', splitType: 'Upper', description: 'Overhead pressing, weighted pull-ups, and upper-back density.', specs: [pushSession[2], pullSession[0], pushSession[1], pullSession[2], pullSession[3], pushSession[4]] },
-      { name: 'Lower B — Hinge & Unilateral Volume', splitType: 'Lower', description: 'Deadlift/leg press hypertrophy with hamstring isolation and calves.', specs: [fullBodyB[0], legsSession[2], legsSession[3], lowerSession[3], legsSession[4]] },
+      {
+        name: 'Upper A — Strength & Horizontal Focus',
+        splitType: 'Upper',
+        description: 'Primary bench and heavy row progression with shoulder/arm work.',
+        specs: upperSession,
+      },
+      {
+        name: 'Lower A — Squat & Posterior Chain',
+        splitType: 'Lower',
+        description: 'Primary squat pattern, RDL hinge, and core stability.',
+        specs: lowerSession,
+      },
+      {
+        name: 'Upper B — Vertical & Hypertrophy',
+        splitType: 'Upper',
+        description: 'Overhead pressing, weighted pull-ups, and upper-back density.',
+        specs: [pushSession[2], pullSession[0], pushSession[1], pullSession[2], pullSession[3], pushSession[4]],
+      },
+      {
+        name: 'Lower B — Hinge & Unilateral Volume',
+        splitType: 'Lower',
+        description: 'Deadlift/leg press hypertrophy with hamstring isolation and calves.',
+        specs: [fullBodyB[0], legsSession[2], legsSession[3], lowerSession[3], legsSession[4]],
+      },
     ];
     dayBlueprints = Array.from({ length: daysCount }, (_, i) => ul[i % ul.length]);
   }
@@ -790,7 +1134,10 @@ export function generateTrainingProgram(payload: ProgramRequestPayload): Omit<Ai
         ? 'Deload Week: working sets cut by ~40% and capped at RPE 6.0 to supercompensate.'
         : w === 1
           ? `Accumulation Intro: establish crisp technique at RPE 7.5 (${unit}).`
-          : `Accumulation Wave ${w}: step up load or +1 rep per set while keeping RPE <= ${Math.min(9, Number((7.5 + (w - 1) * 0.4).toFixed(1)))}.`,
+          : `Accumulation Wave ${w}: step up load or +1 rep per set while keeping RPE <= ${Math.min(
+              9,
+              Number((7.5 + (w - 1) * 0.4).toFixed(1))
+            )}.`,
       sessions,
     });
   }
@@ -798,9 +1145,9 @@ export function generateTrainingProgram(payload: ProgramRequestPayload): Omit<Ai
   const shortGoal = goalPrompt.length > 52 ? `${goalPrompt.slice(0, 49).trim()}...` : goalPrompt;
   return {
     title: `${weeksCount}-Week ${splitPref} — ${shortGoal}`.slice(0, 120),
-    focus: `${daysCount} days/week ${splitPref} block built around ${prs.length ? 'your recorded 1RMs' : 'RPE-guided progression'}${
-      includeDeload ? ` with a Week ${weeksCount} deload.` : '.'
-    }`.slice(0, 240),
+    focus: `${daysCount} days/week ${splitPref} block built around ${
+      prs.length ? 'your recorded 1RMs' : 'RPE-guided progression'
+    }${includeDeload ? ` with a Week ${weeksCount} deload.` : '.'}`.slice(0, 240),
     durationWeeks: weeksCount,
     deloadWeekNumber,
     weeks,
