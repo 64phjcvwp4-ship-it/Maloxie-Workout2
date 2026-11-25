@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { MaloxieProvider, useMaloxie } from './context/MaloxieContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import HoloMosaic from './components/HoloMosaic';
+import { IntroSplash } from './components/IntroSplash';
 import DashboardView from './components/views/DashboardView';
 import WorkoutLoggerView from './components/views/WorkoutLoggerView';
 import ProgressAnalyticsView from './components/views/ProgressAnalyticsView';
@@ -27,6 +28,15 @@ function MaloxieShell() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('dashboard');
   const [templateToLoad, setTemplateToLoad] = useState<WorkoutTemplate | null>(null);
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string>('');
+  const [introPhase, setIntroPhase] = useState<'visible' | 'fading' | 'done'>('visible');
+
+  const handleStartFadeOut = useCallback(() => {
+    setIntroPhase((prev) => (prev === 'visible' ? 'fading' : prev));
+  }, []);
+
+  const handleIntroComplete = useCallback(() => {
+    setIntroPhase('done');
+  }, []);
 
   const navItems: { id: WorkspaceTab; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -69,6 +79,20 @@ function MaloxieShell() {
         />
       </div>
 
+      {introPhase !== 'done' && (
+        <IntroSplash
+          fadingOut={introPhase === 'fading'}
+          onStartFadeOut={handleStartFadeOut}
+          onComplete={handleIntroComplete}
+        />
+      )}
+
+      <div
+        aria-hidden={introPhase === 'visible'}
+        className={`relative z-10 flex flex-col flex-1 transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          introPhase === 'visible' ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'
+        }`}
+      >
       {/* Strict 3-Zone Top Bar Contract */}
       <header className="sticky top-0 z-40 bg-[#08080A]/65 backdrop-blur-2xl border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between gap-8">
@@ -247,6 +271,7 @@ function MaloxieShell() {
         />
         <span>Maloxie Strength Log &amp; AI Training Studio · {user ? 'Cloud Synced' : 'Local Workspace'}</span>
       </footer>
+      </div>
     </div>
   );
 }
