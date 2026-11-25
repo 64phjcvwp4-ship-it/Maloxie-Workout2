@@ -78,14 +78,12 @@ function MaloxieShell() {
             onClick={() => setActiveTab('dashboard')}
             className="inline-flex items-center gap-2.5 text-[21px] font-display font-bold tracking-[-0.035em] text-white whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <span className="inline-flex items-center justify-center w-8 h-6 overflow-hidden shrink-0">
-              <img
-                src="/assets/aistudio/1795213782478_6c4c1cc1.jpg"
-                alt=""
-                aria-hidden="true"
-                className="w-full h-full object-contain scale-[2.5] invert contrast-[1.45] brightness-110 mix-blend-screen select-none pointer-events-none"
-              />
-            </span>
+            <img
+              src="/assets/maloxie-logo-white.png"
+              alt=""
+              aria-hidden="true"
+              className="h-5 w-auto object-contain select-none pointer-events-none shrink-0"
+            />
             <span>Maloxie</span>
           </button>
 
@@ -241,14 +239,12 @@ function MaloxieShell() {
       </main>
 
       <footer className="relative z-10 border-t border-white/[0.06] py-6 px-6 flex items-center justify-center gap-2 text-xs text-zinc-500">
-        <span className="inline-flex items-center justify-center w-5 h-4 overflow-hidden shrink-0 opacity-75">
-          <img
-            src="/assets/aistudio/1795213782478_6c4c1cc1.jpg"
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-contain scale-[2.5] invert contrast-[1.45] brightness-110 mix-blend-screen select-none pointer-events-none"
-          />
-        </span>
+        <img
+          src="/assets/maloxie-logo-white.png"
+          alt=""
+          aria-hidden="true"
+          className="h-3.5 w-auto object-contain opacity-80 select-none pointer-events-none shrink-0"
+        />
         <span>Maloxie Strength Log &amp; AI Training Studio · {user ? 'Cloud Synced' : 'Local Workspace'}</span>
       </footer>
     </div>

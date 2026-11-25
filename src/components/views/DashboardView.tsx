@@ -20,7 +20,7 @@ import { GlassSlabLogo } from '../glass-slab-logo';
 import AnimatedContent from '../AnimatedContent';
 import { MaloxieButton } from '../ui/MaloxieButton';
 import { TactilePillButton } from '../ui/UiverseControls';
-import { SPIRAL_PROGRESS_MEDIA } from '../../data/presets';
+import { useSpiralChartItems } from '../SpiralChartCards';
 import { formatVolume, formatWeight, fromKg } from '../../utils/units';
 import type { WorkspaceTab } from '../../types/training';
 
@@ -112,17 +112,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     };
   }, [measurements, workouts]);
 
-  const spiralItems = useMemo(() => {
-    return SPIRAL_PROGRESS_MEDIA.map((item, idx) => {
-      const pr = prs[idx];
-      return {
-        src: item.src,
-        alt: item.alt,
-        label: pr ? pr.exerciseName : item.label,
-        metric: pr ? `${formatWeight(pr.bestWeightKg, unit)} × ${pr.bestWeightReps}` : 'Ready to Log',
-      };
-    });
-  }, [prs, unit]);
+  const spiralItems = useSpiralChartItems({
+    workouts,
+    prs,
+    measurements,
+    goals,
+    unit,
+    onOpenProgress: () => onNavigate('progress'),
+  });
 
   const primaryGoal = goals.find((g) => g.status === 'active') ?? goals[0] ?? null;
 
@@ -211,14 +208,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="lg:col-span-5">
-              <div className="w-full rounded-[22px] border border-white/[0.06] bg-[#08080A]/55 overflow-hidden">
+              <div className="w-full">
                 <GlassSlabLogo
-                  logo="/assets/aistudio/1795213782478_6c4c1cc1.jpg"
+                  logo="/assets/maloxie-logo-mask.png"
                   slabs={17}
                   depth={0.75}
                   elevation={60}
                   colors={['#e89b3c', '#f4b86a', '#d9822b', '#27272a', '#141418']}
-                  backgroundColor="#08080a"
+                  backgroundColor="transparent"
                   lightColor="#fff2ed"
                   ambient={0.18}
                   exposure={1.16}
@@ -486,36 +483,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="lg:col-span-5 relative maloxie-block overflow-hidden min-h-[420px] flex flex-col">
           <div className="relative z-30 p-5 border-b border-white/[0.06] flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-[#F4B86A]">Milestone Spiral</p>
+              <p className="text-xs font-medium text-[#F4B86A]">Analytics Orbit</p>
               <h2 className="text-lg font-display font-semibold text-white">
-                Strength Progression Orbit
+                Training Graphs &amp; Charts
               </h2>
             </div>
             <button
               type="button"
               onClick={() => onNavigate('progress')}
-              className="text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               View Charts →
             </button>
           </div>
-          <div className="relative flex-1 min-h-[340px]">
+          <div className="relative flex-1 min-h-[360px]">
             <InfiniteSpiral
               items={spiralItems}
-              speed={0.5}
-              radius={138}
-              cardWidth={102}
-              cardHeight={102}
-              verticalSpacing={54}
-              perspective={1000}
-              cardRadius={12}
-              centerScale={1.2}
-              edgeBlur={4}
+              speed={0.42}
+              animationMode="all"
+              radius={146}
+              cardWidth={182}
+              cardHeight={120}
+              verticalSpacing={64}
+              perspective={1050}
+              cardRadius={16}
+              centerScale={1.18}
+              edgeBlur={2.5}
               cardsPerTurn={6}
               pauseOnHover
               direction="up"
-              edgeFade={0.3}
-              grayscale={0.35}
+              edgeFade={0.28}
+              grayscale={0}
             />
             <GradualBlur
               position="bottom"

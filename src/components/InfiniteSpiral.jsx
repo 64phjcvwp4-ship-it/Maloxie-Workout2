@@ -12,6 +12,7 @@ const smoothstep = (min, max, value) => {
 
 const InfiniteSpiral = ({
   items = [],
+  renderItem,
   speed = 0.55,
   direction = 'up',
   animationMode = 'auto',
@@ -229,38 +230,62 @@ const InfiniteSpiral = ({
         dragMovedRef.current = false;
       }}
     >
-      <div className="infinite-spiral__stage" role="list" aria-label="Infinite spiral gallery">
+      <div className="infinite-spiral__stage" role="list" aria-label="Infinite spiral charts">
         {normalizedItems.map((item, index) => {
           const Card = item.href ? 'a' : 'div';
+          const customContent = renderItem ? renderItem(item, index) : item.content;
+          const isInteractive = Boolean(item.href || item.onClick);
           return (
             <Card
-              key={item.id ?? `${item.src}-${index}`}
+              key={item.id ?? `${item.src ?? 'chart'}-${index}`}
               ref={node => {
                 cardRefs.current[index] = node;
               }}
               className="infinite-spiral__item"
-              style={{ width: cardWidth, height: cardHeight, borderRadius: cardRadius }}
+              data-interactive={isInteractive || undefined}
+              style={{
+                width: cardWidth,
+                height: cardHeight,
+                borderRadius: cardRadius,
+                cursor: item.onClick ? 'pointer' : undefined,
+              }}
               href={item.href}
               target={item.target}
               rel={item.target === '_blank' ? 'noreferrer' : undefined}
+              onClick={item.onClick}
+              onKeyDown={
+                item.onClick
+                  ? event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        item.onClick();
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={item.onClick && !item.href ? 0 : undefined}
               role="listitem"
               aria-label={item.label ?? item.alt}
             >
-              <img
-                className="infinite-spiral__image"
-                src={item.src}
-                alt={item.alt}
-                loading={index < 6 ? 'eager' : 'lazy'}
-                draggable={false}
-                style={{
-                  width: cardWidth,
-                  height: cardHeight,
-                  maxWidth: 'none',
-                  maxHeight: 'none',
-                  objectFit: imageFit,
-                  filter: `grayscale(${Math.min(1, Math.max(0, grayscale))})`
-                }}
-              />
+              {customContent ? (
+                <div className="infinite-spiral__content">{customContent}</div>
+              ) : (
+                <img
+                  className="infinite-spiral__image"
+                  src={item.src}
+                  alt={item.alt}
+                  loading={index < 6 ? 'eager' : 'lazy'}
+                  draggable={false}
+                  style={{
+                    width: cardWidth,
+                    height: cardHeight,
+                    maxWidth: 'none',
+                    maxHeight: 'none',
+                    objectFit: imageFit,
+                    filter: `grayscale(${Math.min(1, Math.max(0, grayscale))})`
+                  }}
+                />
+              )}
             </Card>
           );
         })}

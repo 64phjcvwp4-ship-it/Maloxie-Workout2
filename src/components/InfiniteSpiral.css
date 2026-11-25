@@ -21,14 +21,23 @@
   width: var(--infinite-spiral-card-width);
   height: var(--infinite-spiral-card-height);
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.24);
+  border: 1px solid rgb(255 255 255 / 0.11);
   border-radius: var(--infinite-spiral-card-radius);
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: 0 14px 38px rgb(8 6 18 / 0.2);
+  background: linear-gradient(155deg, rgb(22 22 29 / 0.92), rgb(11 11 15 / 0.95));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 18px 42px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   transform-style: preserve-3d;
   backface-visibility: hidden;
   will-change: transform, opacity, filter;
   text-decoration: none;
+  transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.infinite-spiral__item[data-interactive='true']:hover {
+  border-color: rgb(244 184 106 / 0.42);
 }
 
 .infinite-spiral__image {
@@ -39,6 +48,13 @@
   height: 100%;
   object-position: center;
   user-select: none;
+}
+
+.infinite-spiral__content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (prefers-reduced-motion: reduce) {

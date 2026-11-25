@@ -116,36 +116,3 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     ],
   },
 ];
-
-export const SPIRAL_PROGRESS_MEDIA = [
-  {
-    src: '/src/assets/images/spiral_bench_pr_1795594191802.jpg',
-    alt: 'Barbell Bench Press PR Milestone',
-    label: 'Upper Press Peak',
-  },
-  {
-    src: '/src/assets/images/spiral_deadlift_power_1795594192149.jpg',
-    alt: 'Deadlift Pulling Strength Milestone',
-    label: 'Posterior Power',
-  },
-  {
-    src: '/src/assets/images/spiral_squat_depth_1795594191898.jpg',
-    alt: 'Barbell Back Squat Depth & Overload',
-    label: 'Squat Foundation',
-  },
-  {
-    src: '/src/assets/images/spiral_hypertrophy_focus_1795594193078.jpg',
-    alt: 'Hypertrophy Volume Block',
-    label: 'Volume Accumulation',
-  },
-  {
-    src: '/src/assets/images/spiral_recovery_deload_1795594193358.jpg',
-    alt: 'Deload & Recovery Protocol',
-    label: 'Deload Recovery',
-  },
-  {
-    src: '/src/assets/images/spiral_peak_goal_1795594193167.jpg',
-    alt: 'Calibrated Goal Target Execution',
-    label: 'Target Precision',
-  },
-];

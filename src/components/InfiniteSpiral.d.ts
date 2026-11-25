@@ -1,16 +1,25 @@
+import type { ReactNode } from 'react';
+
 export type InfiniteSpiralItem =
   | string
   | {
-      src: string;
+      id?: string;
+      src?: string;
       alt?: string;
+      label?: string;
+      href?: string;
+      target?: string;
+      onClick?: () => void;
+      content?: ReactNode;
       [key: string]: unknown;
     };
 
 export interface InfiniteSpiralProps {
   items?: InfiniteSpiralItem[];
+  renderItem?: (item: Exclude<InfiniteSpiralItem, string>, index: number) => ReactNode;
   speed?: number;
   direction?: 'up' | 'down';
-  animationMode?: 'auto' | 'scroll' | 'drag';
+  animationMode?: 'auto' | 'scroll' | 'drag' | 'all';
   radius?: number;
   cardWidth?: number;
   cardHeight?: number;
