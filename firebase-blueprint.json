@@ -1,0 +1,390 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated athlete profile and global training preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "preferredUnit": {
+          "type": "string",
+          "enum": ["kg", "lbs"]
+        },
+        "activeDeloadWeek": {
+          "type": "boolean"
+        },
+        "deloadLabel": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "preferredUnit", "activeDeloadWeek", "createdAt", "updatedAt"]
+    },
+    "WorkoutLog": {
+      "title": "WorkoutLog",
+      "description": "Completed or active strength workout session with warmups, sets, RPE, rest times, readiness, and injury notes.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "templateName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "isDeload": {
+          "type": "boolean"
+        },
+        "energyLevel": {
+          "type": "integer"
+        },
+        "sleepHours": {
+          "type": "number"
+        },
+        "sleepQuality": {
+          "type": "integer"
+        },
+        "injuryNotes": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "warmupItems": {
+          "type": "array"
+        },
+        "exercises": {
+          "type": "array"
+        },
+        "totalVolumeKg": {
+          "type": "number"
+        },
+        "totalSets": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "date", "title", "isDeload", "energyLevel", "sleepHours", "sleepQuality", "warmupItems", "exercises", "totalVolumeKg", "totalSets", "createdAt", "updatedAt"]
+    },
+    "WorkoutTemplate": {
+      "title": "WorkoutTemplate",
+      "description": "Reusable split template (Push, Pull, Legs, Full Body, or AI-generated).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "splitType": {
+          "type": "string",
+          "enum": ["Push", "Pull", "Legs", "Full Body", "Upper", "Lower", "Custom"]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "source": {
+          "type": "string",
+          "enum": ["preset", "custom", "ai"]
+        },
+        "exercises": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "name", "splitType", "source", "exercises", "createdAt", "updatedAt"]
+    },
+    "ExerciseItem": {
+      "title": "ExerciseItem",
+      "description": "Pre-loaded or custom exercise in the athlete library with muscle group and cues.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "muscleGroup": {
+          "type": "string",
+          "enum": ["Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Full Body"]
+        },
+        "equipment": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "cues": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "isCustom": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "name", "muscleGroup", "equipment", "isCustom", "createdAt"]
+    },
+    "PersonalRecord": {
+      "title": "PersonalRecord",
+      "description": "Auto-updated personal record snapshot per exercise.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "exerciseName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "muscleGroup": {
+          "type": "string",
+          "enum": ["Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Full Body"]
+        },
+        "bestWeightKg": {
+          "type": "number"
+        },
+        "bestWeightReps": {
+          "type": "integer"
+        },
+        "bestEstimated1RMKg": {
+          "type": "number"
+        },
+        "bestSetVolumeKg": {
+          "type": "number"
+        },
+        "achievedAt": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "workoutId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "exerciseName", "muscleGroup", "bestWeightKg", "bestWeightReps", "bestEstimated1RMKg", "bestSetVolumeKg", "achievedAt", "workoutId", "updatedAt"]
+    },
+    "BodyMeasurement": {
+      "title": "BodyMeasurement",
+      "description": "Linked body weight and circumference measurement entry.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "bodyweightKg": {
+          "type": "number"
+        },
+        "bodyFatPct": {
+          "type": "number"
+        },
+        "waistCm": {
+          "type": "number"
+        },
+        "chestCm": {
+          "type": "number"
+        },
+        "armsCm": {
+          "type": "number"
+        },
+        "thighsCm": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "date", "bodyweightKg", "createdAt"]
+    },
+    "TrainingGoal": {
+      "title": "TrainingGoal",
+      "description": "Strength or bodyweight milestone goal with target date.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "exerciseName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "metricType": {
+          "type": "string",
+          "enum": ["weight", "e1rm", "volume", "bodyweight"]
+        },
+        "targetValue": {
+          "type": "number"
+        },
+        "startValue": {
+          "type": "number"
+        },
+        "targetDate": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "achieved"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "title", "exerciseName", "metricType", "targetValue", "startValue", "targetDate", "status", "createdAt", "updatedAt"]
+    },
+    "AiTrainingProgram": {
+      "title": "AiTrainingProgram",
+      "description": "Multi-week training program and deload schedule generated by Maloxie AI.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "focus": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "durationWeeks": {
+          "type": "integer"
+        },
+        "deloadWeekNumber": {
+          "type": "integer"
+        },
+        "weeks": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "title", "focus", "durationWeeks", "deloadWeekNumber", "weeks", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile, preferred weight unit, and active deload week settings."
+    },
+    "/users/{userId}/workouts/{workoutId}": {
+      "schema": { "$ref": "#/entities/WorkoutLog" },
+      "description": "User workout logs with sets, RPE, rest durations, warmups, readiness, and injury notes."
+    },
+    "/users/{userId}/templates/{templateId}": {
+      "schema": { "$ref": "#/entities/WorkoutTemplate" },
+      "description": "User workout split templates."
+    },
+    "/users/{userId}/exercises/{exerciseId}": {
+      "schema": { "$ref": "#/entities/ExerciseItem" },
+      "description": "User exercise library including pre-loaded and custom movements."
+    },
+    "/users/{userId}/prs/{prId}": {
+      "schema": { "$ref": "#/entities/PersonalRecord" },
+      "description": "Auto-updated personal records keyed by normalized exercise slug."
+    },
+    "/users/{userId}/measurements/{measurementId}": {
+      "schema": { "$ref": "#/entities/BodyMeasurement" },
+      "description": "Chronological body weight and circumference measurement entries."
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": { "$ref": "#/entities/TrainingGoal" },
+      "description": "Strength and bodyweight milestone goals."
+    },
+    "/users/{userId}/programs/{programId}": {
+      "schema": { "$ref": "#/entities/AiTrainingProgram" },
+      "description": "Multi-week training programs and deload blocks generated by Maloxie AI."
+    }
+  }
+}

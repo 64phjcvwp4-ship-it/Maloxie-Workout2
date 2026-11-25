@@ -1,0 +1,300 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #08080a;
+  --surface: #111115;
+  --surface-elevated: #18181e;
+  --border-hairline: rgba(255, 255, 255, 0.07);
+  --primary: #e89b3c;
+  --primary-soft: rgba(232, 155, 60, 0.14);
+  --amber: #f4b86a;
+  --text-primary: #f5f5f7;
+  --text-muted: #a1a1aa;
+}
+
+@layer base {
+  html {
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-feature-settings: "ss01" on, "cv05" on;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  .font-mono, .tabular-nums {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  .maloxie-block {
+    background: rgba(18, 18, 24, 0.56);
+    backdrop-filter: blur(36px) saturate(1.25);
+    -webkit-backdrop-filter: blur(36px) saturate(1.25);
+    border-radius: 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    box-shadow:
+      0 24px 52px -18px rgba(0, 0, 0, 0.72),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.065);
+  }
+
+  .maloxie-input {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 0.875rem;
+    color: #f5f5f7;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+
+  .maloxie-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(232, 155, 60, 0.6);
+  }
+}
+
+/* Custom sleek obsidian scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #08080a;
+}
+::-webkit-scrollbar-thumb {
+  background: #222229;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #363642;
+}
+
+/* -------------------------------------------------------------------
+   Optical Smoked-Glass Sliding-Ball Selector
+   Adapted for Maloxie obsidian & burnished amber hardware aesthetic
+   ------------------------------------------------------------------- */
+.radio-input {
+  display: flex;
+  min-height: 172px;
+  align-items: center;
+  position: relative;
+}
+
+.radio-input .glass {
+  z-index: 2;
+  align-self: stretch;
+  width: 72px;
+  margin-right: 18px;
+  padding: 6px;
+  background-color: rgba(255, 255, 255, 0.035);
+  border-radius: 26px;
+  box-shadow:
+    rgba(0, 0, 0, 0.55) 0px 20px 40px -12px,
+    rgba(232, 155, 60, 0.08) 0px 8px 24px -12px,
+    rgba(255, 255, 255, 0.12) 0px 1px 0px 0px inset;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.radio-input .glass-inner {
+  width: 100%;
+  height: 100%;
+  border-color: rgba(255, 255, 255, 0.09);
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: 20px;
+}
+
+.radio-input .selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-input .choice {
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+}
+
+.radio-input .choice > div {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  margin-right: 14px;
+  z-index: 3;
+  flex-shrink: 0;
+}
+
+.radio-input .choice-circle {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 100%;
+  width: 100%;
+  border-radius: 100%;
+  border-width: 2px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(12, 12, 16, 0.85);
+  cursor: pointer;
+  box-shadow:
+    0px 2px 10px -2px rgba(0, 0, 0, 0.85),
+    0px 1px 0px rgba(255, 255, 255, 0.08) inset;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.radio-input .choice-circle:hover {
+  border-color: rgba(232, 155, 60, 0.65);
+}
+
+.radio-input .ball {
+  z-index: 4;
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+  transform: translateX(-64px);
+  box-shadow:
+    rgba(0, 0, 0, 0.4) 0px -5px 8px 0px inset,
+    rgba(232, 155, 60, 0.42) 0px -8px 10px 0px inset,
+    rgba(255, 255, 255, 0.5) 0px 1px 2px inset,
+    0px 6px 14px rgba(0, 0, 0, 0.5);
+  border-radius: 100%;
+  transition: transform 640ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: radial-gradient(circle at 35% 30%, #fff7eb 0%, #f4b86a 52%, #b86714 115%);
+}
+
+.radio-input .choice-circle:checked + .ball {
+  transform: translateX(0px);
+}
+
+.radio-input .choice-name {
+  color: #8e8e98;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "DM Sans", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: color 180ms ease;
+  user-select: none;
+}
+
+.radio-input .choice-name.is-active {
+  color: #f5f5f7;
+}
+
+/* -------------------------------------------------------------------
+   Machined Smoked-Obsidian & Champagne-Amber Hardware Pill Button
+   ------------------------------------------------------------------- */
+.uiverse-pill-btn {
+  all: unset;
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: transparent;
+}
+
+.uiverse-pill-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.uiverse-pill-btn::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(244, 184, 106, 0.55) 0%,
+    rgba(255, 255, 255, 0.14) 45%,
+    rgba(232, 155, 60, 0.35) 100%
+  );
+  opacity: 0.72;
+  transition: opacity 180ms ease;
+}
+
+.uiverse-pill-btn:hover:not(:disabled)::after {
+  opacity: 1;
+}
+
+.uiverse-pill-btn .button-outer {
+  position: relative;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow:
+    0 10px 26px -10px rgba(0, 0, 0, 0.85),
+    0 4px 16px -6px rgba(232, 155, 60, 0.2);
+  transition: box-shadow 180ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uiverse-pill-btn:hover:not(:disabled) .button-outer {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 32px -10px rgba(0, 0, 0, 0.9),
+    0 6px 22px -6px rgba(232, 155, 60, 0.3);
+}
+
+.uiverse-pill-btn:active:not(:disabled) .button-outer {
+  transform: translateY(0px) scale(0.985);
+}
+
+.uiverse-pill-btn .button-inner {
+  position: relative;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 0.68rem 1.4rem;
+  background: linear-gradient(180deg, #1b1b22 0%, #111116 100%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.6);
+  transition: background 180ms ease;
+}
+
+.uiverse-pill-btn:hover:not(:disabled) .button-inner {
+  background: linear-gradient(180deg, #22222b 0%, #14141a 100%);
+}
+
+.uiverse-pill-btn .button-inner span {
+  position: relative;
+  z-index: 4;
+  font-family: "DM Sans", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #f5f5f7;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.uiverse-pill-btn:focus-visible {
+  outline: 2px solid #e89b3c;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio-input .ball,
+  .uiverse-pill-btn .button-inner,
+  .uiverse-pill-btn .button-outer,
+  .uiverse-pill-btn::after {
+    transition: none !important;
+  }
+}
